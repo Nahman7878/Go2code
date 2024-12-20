@@ -1,75 +1,130 @@
-const todoForm = document.querySelector('form');
-const todoInput = document.getElementById('todo-input');
-const todoListUL = document.getElementById('todo-list')
+const questions = [
+    {
+        question: "Which of the following is an object oriented programing language?",
+        answers: [
+            { text: "Python", correct: false},
+            { text: "C#", correct: false},
+            { text: "C++", correct: true},
+            { text: "all of the above", correct: false},
+        ]
+    },
+    {
+        question: "Which programing language is the most popular and widely used?",
+        answers: [
+            { text: "Java", correct: false},
+            { text: "Python", correct: true},
+            { text: "C++", correct: false},
+            { text: "Javascript", correct: false},
+        ]
+    },
+    {
+        question: "Which programing language is the hardest to learn?",
+        answers: [
+            { text: "Java", correct: false},
+            { text: "C#", correct: false},
+            { text: "C++", correct: true},
+            { text: "Python", correct: false},
+        ]
+    },
+    {
+        question: "When are ID selectors used?",
+        answers: [
+            { text: "when the style is being applied to one HTML element.", correct: true},
+            { text: "they're never used.", correct: false},
+            { text: "when the style is being applied to multiple HTML elements.", correct: false},
+            { text: "all of the above", correct: false},
+        ]
+    },
+    {
+        question: "One of the following is not a property of an algorithm",
+        answers: [
+            { text: "Efficency", correct: false},
+            { text: "Finiteness", correct: false},
+            { text: "Perciseness", correct: true},
+            { text: "Sequence", correct: false},
+        ]
+    }
+];
 
-let allTodos = getTodos();
-updateTodoList();
+const questionElement = document.getElementById("question");
+const answerButtons = document.getElementById("answer-buttons");
+const nextButton = document.getElementById("next-btn");
 
-todoForm.addEventListener('submit', function(e){
-    e.preventDefault();
-    addTodo();
-})
+let currentQuestionIndex = 0;
+let score = 0;
 
-function addTodo(){
-    const todoText = todoInput.value.trim();
-    if(todoText.length > 0){
-        const todoObject = {
-            text: todoText,
-            completed: false
+function startQuiz(){
+    currentQuestionIndex = 0;
+    score = 0;
+    nextButton.innerHTML = "Next";
+    showQuestion();
+}
+
+function showQuestion(){
+    resetState();
+    let currentQuestion = questions[currentQuestionIndex];
+    let questionNo = currentQuestionIndex + 1;
+    questionElement.innerHTML = questionNo + ". " + currentQuestion.question;
+    
+    currentQuestion.answers.forEach(answer => {
+        const button = document.createElement("button");
+        button.innerHTML = answer.text;
+        button.classList.add("btn");
+        answerButtons.appendChild(button);
+        if(answer.correct){
+            button.dataset.correct = answer.correct;
         } 
-        allTodos.push(todoObject);
-        updateTodoList();
-        saveTodos();
-        todoInput.value = "";
+        button.addEventListener("click", selectAnswer);
+    });
+}
+
+function resetState(){
+    nextButton.style.display = "none";
+    while(answerButtons.firstChild){
+        answerButtons.removeChild(answerButtons.firstChild);
     }
 }
-function updateTodoList(){
-    todoListUL.innerHTML = "";
-    allTodos.forEach((todo, todoIndex)=>{
-        todoItem = createTodoItem(todo, todoIndex);
-        todoListUL.append(todoItem);
-    })
+
+function selectAnswer(e){
+    const selectedBtn = e.target;
+    const isCorrect = selectedBtn.dataset.correct === "true";
+    if(isCorrect){
+        selectedBtn.classList.add("correct");
+        score++;
+    }else{
+        selectedBtn.classList.add("incorrect");
+    }
+    Array.from(answerButtons.children).forEach(button => {
+        if(button.dataset.correct === "true"){
+            button.classList.add("correct");
+        }
+        button.disabled = true;
+    });
+    nextButton.style.display = "block";
 }
-function createTodoItem(todo, todoIndex){
-    const todoId = "todo-"+todoIndex;
-    const todoLI = document.createElement("li");
-    const todoText = todo.text;
-    todoLI.className = "todo";
-    todoLI.innerHTML = `
-    <input type="checkbox" id="${todoId}">
-                    <label class="custom-checkbox" for="${todoId}">
-                        <svg fill="transparent" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
-                            <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>
-                    </label>
-                    <label for="${todoId}" class="todo-text">
-                    ${todoText}                    </label>
-                    <button class="delete-button">
-                        <svg fill="var(--secondary-color)" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000">
-                            <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
-                    </button>
-    `
-    const deleteButton = todoLI.querySelector(".delete-button");
-    deleteButton.addEventListener("click", ()=>{
-        deleteTodoItem(todoIndex);
-    })
-    const checkbox = todoLI.querySelector("input");
-    checkbox.addEventListener("change", ()=>{
-        allTodos[todoIndex].completed = checkbox.checked;
-        saveTodos();
-    })
-    checkbox.checked = todo.completed;
-    return todoLI;
+
+function showScore(){
+    resetState();
+    questionElement.innerHTML = `You scored ${score} out of ${questions.length}!`;
+    nextButton.innerHTML = "Play Again";
+    nextButton.style.display = "block";
 }
-function deleteTodoItem(todoIndex){
-    allTodos = allTodos.filter((_, i)=> i !== todoIndex);
-    saveTodos();
-    updateTodoList();
+
+function handleNextButton(){
+    currentQuestionIndex++;
+    if(currentQuestionIndex < questions.length){
+        showQuestion();
+    }else{
+        showScore();
+    }
 }
-function saveTodos(){
-    const todosJson = JSON.stringify(allTodos) 
-    localStorage.setItem("todos", todosJson);
-} 
-function getTodos(){
-    const todos = localStorage.getItem("todos") || "[]";
-    return JSON.parse(todos);
-}
+
+nextButton.addEventListener("click", ()=>{
+    if(currentQuestionIndex < questions.length){
+        handleNextButton();
+    }else{
+        startQuiz();
+    }
+})
+
+startQuiz();
